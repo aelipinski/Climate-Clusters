@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-FF5SDSY0JS"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+
+	  gtag('config', 'G-FF5SDSY0JS');
+	</script>
+	
+	<meta charset="utf-8">
+	<title>Earth's Evolving Climate Zones</title>
+	<link rel="icon" href="data:;base64,=">
+
+	<script src="https://d3js.org/d3.v6.min.js"></script>
+	<script type="text/javascript" src="d3-dsv.min.js"></script>
+	<script type="text/javascript" src="topojson.v2.min.js"></script>
+	<script type="text/javascript" src="d3-geo-projection.v2.min.js"></script>
+
+	<link rel="stylesheet"
+	href="https://fonts.googleapis.com/css?family=Titillium+Web">
+
+	<link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+	<!-- Popup modal window for about section -->
+	<div id="myModal" class="modal">
+
+	  <div class="modal-content">
+	    <div class="modal-header">
+	      <span class="close">&times;</span>
+	      <h2>About the project</h2>
+	    </div>
+	    <div class="modal-body">
+				<strong>Authors</strong><br>
+				Alice Dumay, Grégoire Petit | MS Computer Science, Institut Mines-Télécom x Georgia Tech<br>
+				Austin Lipinski, Taylor Brooks | MS Analytics, Georgia Tech<br>
+				CSE 6242 Data and Visual Analytics | Fall 2020
+				<br><br>
+				<strong>Background</strong><br>
+				Given the complexities of using unsupervised learning to define climate biomes,
+				no universally accepted model exists. Thus, our goal was to develop an interactive,
+				dynamic tool that will help progress the standard towards machine learning-based
+				climate classification. We scraped the
+				<a href="https://www.ncei.noaa.gov/" target="_blank">National Centers for Environmental Information</a>
+				website for weather station data and applied dynamic time warping to remove seasonal variation.
+				Then we employed two different clustering algorithms<sup>1, 2</sup> to
+				cluster the data by the weather parameters - temperature, precipitation, and pressure - over many
+				combinations of tuning parameters. We then selected the top performing models
+				based on accuracy and stability.
+				Finally, empty areas without weather stations were filled by growing the clusters outward, and
+				temporal smoothing was applied to reduce noise. For more details, check out the
+				<a href="Climate_Clusters_Report.pdf" target="_blank">full report</a> and
+				<a href="Climate_Clusters_Poster.pdf" target="_blank">poster.</a>
+				<br><br>
+				<strong>Usage Notes</strong><br>
+				<li style="list-style-position:outside;"><strong>Model Selection:</strong>
+					The Biome Accurate<sup>1</sup> model matches closely with known classifications such as the
+					<a href="https://en.wikipedia.org/wiki/K%C3%B6ppen_climate_classification" target="_blank">Köppen-Geiger classification</a>,
+					while the Latitude Focus<sup>2</sup> model emphasizes differences across latitudes and more clearly
+					shows subtle shifts over time.</li>
+				<li><strong>Cluster Selection:</strong> This parameter controls the granularity of clustering per user preference.</li>
+				<li><strong>Timeline:</strong> Use the timeline slider and play button to observe cluster movement over time.</li>
+				<li><strong>Mouseover Stats: </strong>Mouseover the different regions to see the average weather statistics for that cluster.</li>
+				<br><span style="font-size:12px;">
+				<sup>1</sup>The Biome Accurate option uses the <i>Expectation Maximization</i> clustering algorithm<br>
+				<sup>2</sup>The Latitude Focus option uses the <i>k-Means</i> clustering algorithm</span>
+	    </div>
+	  </div>
+
+	</div>
+
+	<!-- Wrapper for controls bar -->
+	<div class = "controls" >
+		<div class = "wrapper" >
+			<div class="title"><h1>Earth's Evolving Climate Zones</h1>
+				<p>A dynamic approach to biome classification</p>
+				<img src="info-button.svg" onclick="show_modal()">
+			</div>
+
+			<div class="outer_box_play">
+				<div class="play-container"><button class="button" id="play-button" onclick="play()">Play</button></div>
+
+				<div class="slidecontainer"><div class="range-value" id="rangeV"></div><input type="range" step="1" min="1977" max="2019" value="1980" class="slider" id="myRange" list="ticks">
+				<datalist id="ticks">
+					<option>1977</option>
+					<option>2019</option>
+				</datalist>
+			</div>
+		</div>
+
+		<div class="model_select">
+			<div class="outer_box">
+				<div class="label">Model Type</div>
+				<div class="column">
+					<ul>
+						<li>
+							<input type="radio" id="EM" name="selector" value="E">
+							<label for="EM">Biome Accurate</label>
+
+							<div class="check"></div>
+						</li>
+						<li>
+							<input type="radio" id="kmeans" name="selector" checked="checked" value="k">
+							<label for="kmeans">Latitude Focus</label>
+
+							<div class="check"><div class="inside"></div></div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<div class="cluster_select">
+			<div class="outer_box">
+				<div class="label">Cluster Count</div>
+				<div class="columnn">
+					<ul>
+						<li>
+							<input type="radio" id="3clust" name="cluster_selector" value="3">
+							<label for="3clust">3</label>
+
+							<div class="check"></div>
+						</li>
+						<li>
+							<input type="radio" id="7clust" name="cluster_selector" value="7">
+							<label for="7clust">7</label>
+
+							<div class="check"></div>
+						</li>
+					</ul>
+
+				</div>
+				<div class="column">
+					<ul>
+						<li>
+							<input type="radio" id="5clust" name="cluster_selector" value="5">
+							<label for="5clust">5</label>
+
+							<div class="check"></div>
+						</li>
+						<li>
+							<input type="radio" id="9clust" name="cluster_selector" checked="checked" value="9">
+							<label for="9clust">9</label>
+
+							<div class="check"><div class="inside"></div></div>
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- Horizontal divider  -->
+<hr/>
+<!-- Containder for map svg -->
+<div class="container" id="container"></div>
+
+  <script type="text/javascript">
+
+		// Get the modal window
+		var modal = document.getElementById("myModal");
+
+		// Get the X button that closes the modal
+		var span = document.getElementsByClassName("close")[0];
+
+		// Function to display the modal when button is clicked
+		function show_modal() {
+			modal.style.display = "block";
+		}
+
+		// Function to close the modal when X is clicked
+		span.onclick = function() {
+		  modal.style.display = "none";
+		}
+
+		// Function to close the modal when user clicks outside of modal window
+		window.onclick = function(event) {
+		  if (event.target == modal) {
+		    modal.style.display = "none";
+		  }
+		}
+
+		//Initiliaze the play counter for the play setInterval function
+		var play_counter = 0;
+
+		// Function to trigger setInterval for slider
+		function play() {
+			if (document.getElementById('play-button').innerHTML  == 'Pause'){
+				document.getElementById('play-button').innerHTML  = 'Play';
+				clearInterval (play_counter);
+			} else {
+				document.getElementById('play-button').innerHTML  = 'Pause';
+				play_counter = setInterval ("set_slider()", 100 );
+			}
+		};
+
+		// Function to switch models based on radio button selection
+		document.querySelectorAll('input[type=radio]').forEach((elem) => {
+			elem.addEventListener("change", function(event) {
+				var model = document.querySelector('input[name=selector]:checked').value;
+				var cluster = document.querySelector('input[name=cluster_selector]:checked').value;
+				var model_path = model + cluster + ".json";
+				var promise_model = load_json(model_path);
+				var promise_paths = promise_model.then(make_contours);
+				Promise.all([promise_paths,promise_land, promise_stats])
+					.then((results) => {ready(results[0],results[1],results[2],model+cluster);})
+					.catch ((e) => {
+					console.log(e.message);
+					});;
+			});
+		});
+
+		//Function to update slider values manually
+		const
+		slider = document.getElementById("myRange"),
+		rangeV = document.getElementById('rangeV'),
+		setValue = ()=>{
+			const
+			newValue = Number( (slider.value - slider.min) * 100 / (slider.max - slider.min) ),
+			newPosition = 0 - (newValue * .1);
+			rangeV.innerHTML = `<span>${slider.value}</span>`;
+			rangeV.style.left = `calc(${newValue}% + (${newPosition}px))`;
+		};
+		document.addEventListener("DOMContentLoaded", setValue);
+		slider.addEventListener('input', setValue);
+
+		function set_slider() {
+			if (slider.value == "2019") {
+				slider.value = "1977"
+			}
+				document.getElementById("myRange").stepUp();
+				slider.dispatchEvent(new Event('input'));
+		}
+
+		//Specifies dimension of raw contour data
+		var contour_width = 361; // 181 cellsize 2, 361 cellsize 1
+		var contour_height = 181; // 91 cellsize 2, 181 cellsize 1
+
+		//Margin for SVG
+		var margin = {top: 0, right: 25, bottom: 0, left: 25}
+		, width = window.innerWidth - margin.left - margin.right
+		, height = Math.round(contour_height / contour_width * width);
+
+		//Scaling paramters to align contours with map outline
+		var scale = width / contour_width;
+		var scale_y = scale*1.01;
+		var scale_string = "scale("+scale+","+scale_y+")";
+		var scale_string2 = "scale("+1/scale+","+1/(scale_y)+")";
+		var translate_string = "translate(0,"+height/22+")";
+
+		//Threshold values for contour function
+		var thresholds = [-.5,0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,50]; // varies by cluster size
+		var color = d3.scaleOrdinal()
+			.range(['#f6e8c3','#dfc27d','#bf812d','#8c510a','#003c30','#01665e','#35978f','#80cdc1','#c7eae5','#ffffff'])
+			.domain(thresholds);
+
+		// create a tooltip
+	  var Tooltip = d3.select("#container")
+	    .append("div")
+	    .style("opacity", 0)
+	    .attr("class", "tooltip")
+	    .style("background-color", "black")
+	    .style("border-radius", "5px")
+	    .style("padding", "5px")
+
+		//Create SVG for map
+		var svg = d3.select("#container").append("svg")
+			.attr("width", width)
+			.attr("height", height*.82)
+			.append("g");
+
+		//Define geopath and contours object for contours
+		var path2 = d3.geoPath();
+		const contours = d3.contours().size([contour_width, contour_height]).smooth(false)
+		var path_data = {};
+
+		//function to generate contours with given thresholds
+		var make_contours = function (contour_data){
+			var years = Array.from(Object.keys(contour_data.years)).sort();
+			for (const year of years) {
+				path_data[year] = {}
+				for (const thresh of thresholds) {
+					path_data[year][thresh] = path2(contours.contour(contour_data.years[year], thresh));
+				};
+			};
+			return Promise.resolve(path_data);
+		};
+
+		//Function that takes JSON file path and generates a promise
+		var load_json = function (file_path) {
+	    var json = d3.json(file_path);
+	    return Promise.resolve(json);
+		};
+
+		//Default file paths
+		var model_path = "k9.json";
+		var land_path = "land.json";
+		var stats_path = "stats.json"
+
+		//Initialize promises
+		const promise_model = load_json(model_path);
+		const promise_paths = promise_model.then(make_contours);
+		const promise_land = load_json(land_path);
+		const promise_stats = load_json(stats_path);
+
+		//Run first call to ready function when promises are fulffilled
+		Promise.all([promise_paths,promise_land, promise_stats])
+			.then((results) => {ready(results[0],results[1],results[2],"k9");})
+			.catch ((e) => {
+			console.log(e.message);
+			});
+
+		//ready function that creates map
+		function ready(model,land,stats,selection){
+
+			//Clear SVG of existing content
+			svg.selectAll("*").remove();
+
+			console.log(selection);
+
+			//Slider event listener to update map
+			slider.oninput = function() {
+				 var year = slider.value;
+				 createMap(model,year,stats,selection);
+			}
+
+			//Initiliaze projection function and land features
+			var projection = d3.geoEquirectangular().fitWidth(width,topojson.feature(land, land.objects.land));
+			var world = topojson.feature(land, land.objects.land);
+
+			//create clip path from world map
+			svg.append("g").data(world.features)
+					.append("clipPath").attr("id", "world_map")
+					.append("path")
+					.attr("d", d3.geoPath().projection(projection))
+					.attr("transform",scale_string2+translate_string);
+
+			//add world map border lines
+			svg.append("g").data(world.features)
+					.append("path")
+					.attr("d", d3.geoPath().projection(projection))
+					.attr("transform",translate_string);
+
+			//first pass map creation
+			createMap(model,"1980",stats,selection);
+
+		}
+
+		//function to draw/redraw maps
+		function createMap(path_data,year,stats,selection){
+
+			//get cluster count to limit threshold index selection
+			var clust_num = selection.charAt(1);
+
+			//add contour lines for thresholds, indexed for number of clusters
+			map = svg.selectAll("#contour_path")
+				.data(thresholds.slice(0,clust_num));
+
+			//clear contents
+			map.exit().remove();
+
+			map.enter()
+				.append("path")
+				.attr("id","contour_path")
+				.merge(map)
+					.attr("d", function(d) { return path_data[year][d]})
+					.style("stroke","none")
+					.style("fill", function(d) {return color(d)})
+					.attr("transform",scale_string)
+					.attr("clip-path", "url(#world_map)")
+		    .on("mousemove", function(d) {
+					Tooltip
+		      	.html("<table><tr><th>Measure</th><th>Avg</th><th>Std</th></tr>"+
+									"<tr><td>Temperature, F</td><td>" + Math.round(stats[selection][String(0.5+d.path[0].__data__)]["avg(TEMP)"])+"</td><td>"+
+									Math.round(stats[selection][String(0.5+d.path[0].__data__)]["std(TEMP)"])+"</td></tr>"+
+									"<tr><td>Precipitation, in/yr&nbsp;</td><td>" + Math.round(365*stats[selection][String(0.5+d.path[0].__data__)]["avg(PRCP)"])+"</td><td>"+
+									Math.round(365*stats[selection][String(0.5+d.path[0].__data__)]["std(PRCP)"])+"</td></tr>"+
+									"<tr><td>Wind Speed, knots&nbsp;</td><td>" + Math.round(stats[selection][String(0.5+d.path[0].__data__)]["avg(WDSP)"])+"</td><td>"+
+									Math.round(stats[selection][String(0.5+d.path[0].__data__)]["std(WDSP)"])+"</td></tr>"+
+									"<tr><td>Pressure, mb</td><td>" + Math.round(stats[selection][String(0.5+d.path[0].__data__)]["avg(SLP)"])+"</td><td>"+
+									Math.round(stats[selection][String(0.5+d.path[0].__data__)]["std(SLP)"])+"</td></tr>"+
+									"<tr><td>Rel. Humidity, %&nbsp;</td><td>" + Math.round(stats[selection][String(0.5+d.path[0].__data__)]["avg(RH)"])+"</td></tr></table")
+									.style("top",function (d) {if ((event.pageY) > (height/2)) {
+											return (event.pageY) -280 + "px"
+										} else {
+											return (event.pageY) -130 + "px"
+										}
+									})
+	        				.style("left", function (d) {if ((event.pageX) > (width/2)) {
+										return (event.pageX) - 280 + "px"
+									} else {
+										return (event.pageX) + 40 + "px"
+									}
+								})
+								;})
+				.on('mouseover', function(d) {
+			    Tooltip.style("opacity", .8);
+			    d3.select(this).style('fill', "#772A30");//772A30,97353D
+			  })
+				.on('mouseout', function(d) {
+			    Tooltip.style("opacity", 0);
+					d3.select(this).style('fill', function(d) {return color(d)});
+			  });
+
+		}
+
+    </script>
+
+</body>
+
+</html>
